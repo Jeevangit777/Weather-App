@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
 
 export default function WeatherApp() {
   const [city, setCity] = useState("London");
@@ -12,7 +11,6 @@ export default function WeatherApp() {
   const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [sliderIndex, setSliderIndex] = useState(0);
 
   useEffect(() => {
     const savedCity = localStorage.getItem("lastCity");
@@ -38,7 +36,12 @@ export default function WeatherApp() {
       );
       if (!forecastRes.ok) throw new Error("Forecast data not found");
       const forecastData = await forecastRes.json();
-      setForecast(forecastData.list);
+
+      // Filtering forecast to one entry per day (usually at noon)
+      const dailyForecast = forecastData.list.filter((item) =>
+        item.dt_txt.includes("12:00:00")
+      );
+      setForecast(dailyForecast);
 
       localStorage.setItem("lastCity", searchCity);
     } catch (err) {
@@ -102,36 +105,26 @@ export default function WeatherApp() {
           <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
             5-Day Forecast
           </h3>
-          <Slider
-            min={0}
-            max={forecast.length - 5}
-            step={1}
-            value={[sliderIndex]}
-            onValueChange={(value) => setSliderIndex(value[0])}
-            className="my-4"
-          />
           <div className="space-y-2 p-2 bg-gray-100 dark:bg-gray-800 rounded-lg shadow-inner">
-            {forecast
-              .slice(sliderIndex, sliderIndex + 5)
-              .map((forecastItem, index) => (
-                <Card
-                  key={index}
-                  className="flex justify-between items-center p-4 bg-white dark:bg-gray-700 rounded-lg shadow-md"
-                >
-                  <p className="text-lg text-gray-700 dark:text-gray-300">
-                    {forecastItem.dt_txt}
-                  </p>
-                  <img
-                    src={`http://openweathermap.org/img/wn/${forecastItem.weather[0].icon}.png`}
-                    alt={forecastItem.weather[0].description}
-                    className="w-12 h-12"
-                  />
-                  <p className="text-lg text-gray-700 dark:text-gray-300">
-                    {forecastItem.main.temp}°C |{" "}
-                    {forecastItem.weather[0].description}
-                  </p>
-                </Card>
-              ))}
+            {forecast.map((forecastItem, index) => (
+              <Card
+                key={index}
+                className="flex justify-between items-center p-4 bg-white dark:bg-gray-700 rounded-lg shadow-md"
+              >
+                <p className="text-lg text-gray-700 dark:text-gray-300">
+                  {forecastItem.dt_txt.split(" ")[0]}
+                </p>
+                <img
+                  src={`http://openweathermap.org/img/wn/${forecastItem.weather[0].icon}.png`}
+                  alt={forecastItem.weather[0].description}
+                  className="w-12 h-12"
+                />
+                <p className="text-lg text-gray-700 dark:text-gray-300">
+                  {forecastItem.main.temp}°C |{" "}
+                  {forecastItem.weather[0].description}
+                </p>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
